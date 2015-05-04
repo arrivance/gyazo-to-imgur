@@ -21,9 +21,9 @@ from flask import Flask, request
 """
 Configuraation
 """
-r = praw.Reddit('Gyazo-to-imgur bot by /u/arrivance (currently testing)')
+r = praw.Reddit("Gyazo-to-imgur bot by /u/arrivance (currently testing)")
 
-with open('login.json') as data_file: 
+with open("login.json") as data_file: 
     login_details = json.load(data_file)
 
 """
@@ -34,21 +34,21 @@ Required as reddit is moving away from cookie based logins
 r.set_oauth_app_info(client_id=login_details["reddit_client_id"], client_secret=login_details["reddit_client_secret"], redirect_uri=login_details["reddit_redirect_uri"])
 
 app = Flask(__name__)
-@app.route('/')
+@app.route("/")
 def homepage(): 
     """
     Initial OAuth link
     """
-    return "<a href=%s>Auth with the reddit API</a>" % r.get_authorize_url('uniqueKey', ['identity', 'submit'], True)
+    return "<a href=%s>Auth with the reddit API</a>" % r.get_authorize_url("uniqueKey", ["identity", "submit"], True)
 
-@app.route('/authorize_callback')
+@app.route("/authorize_callback")
 def authorized():
     """
-    After we've successfully logged into the reddit API, we then parse what it returns to us
+    After we"ve successfully logged into the reddit API, we then parse what it returns to us
     """
     global code
-    state = request.args.get('state', '')
-    code = request.args.get('code', '')
+    state = request.args.get("state", "")
+    code = request.args.get("code", "")
 
     # instructs the user to click a link to shutdown the flask instance
     return "Authentication with the reddit API was successful. Please click to close authentication: <a href='http://127.0.0.1:65010/shutdown'>shutdown</a>."
@@ -58,7 +58,7 @@ def shutdown():
     """
     Shutdowns the Flask instance to proceed
     """
-    func = request.environ.get('werkzeug.server.shutdown')
+    func = request.environ.get("werkzeug.server.shutdown")
     if func is None: 
         print("Err")
 
@@ -67,11 +67,11 @@ def shutdown():
 if "-manauth" in sys.argv:
     global code
 
-    auth_url = r.get_authorize_url('uniqueKey', ['identity', 'submit'], True)
+    auth_url = r.get_authorize_url("uniqueKey", ["identity", "submit"], True)
     clip = Tk()
     clip.withdraw()
     clip.clipboard_clear()
-    clip.clipboard_append("auth_url")
+    clip.clipboard_append(auth_url)
     clip.destroy()
 
     print("Authentication URL has been successfully copied to the clipboard. Please copy and paste this into a web browser.")
@@ -102,8 +102,8 @@ def gyazo_link_parser(link):
 
 def imgur_uploader(link): 
     """
-    Uploads passed image to imgur, and then outputs the link from the JSON/dict provided
-    I'm calling it JSON. 
+    Uploads passed image to imgur, and then outputs the link from the JSON/dict provided.
+    I"m calling it JSON. 
     """
     try: 
         uploaded_image = imgur_client.upload_from_url(url=link, config=None, anon=True)
@@ -111,8 +111,8 @@ def imgur_uploader(link):
         print("Error when uploading the image to imgur.")
         return False
     else:
-        print("Successful convert of", link, "to an imgur link", uploaded_image['link'])
-        return uploaded_image['link']
+        print("Successful convert of", link, "to an imgur link", uploaded_image["link"])
+        return uploaded_image["link"]
 
 def file_reader(filename):
     """
@@ -145,7 +145,7 @@ def comment_prep(content):
     Prepares the comment so we can have sme basic context.
     """
     text = "Imgur link: " + content
-    text += "\n"
+    text += "\n\n\n------\n"
     text += "This action was performed by a bot. Message +/u/arrivance for further details."
     return text
 
@@ -155,10 +155,12 @@ access_information =  r.get_access_information(code)
 authenticated_user = r.get_me()
 
 while True: 
-    with open('commented.json') as data_file: 
-        handled_comments = json.load(data_file)
+    with open("commented.json") as data_file: 
+        raw_json = json.load(data_file)
+        handled_comments = raw_json["comment_ids"]
 
-    subreddit = r.get_subreddit('arrivance')
+
+    subreddit = r.get_subreddit("arrivance")
     for submission in subreddit.get_hot(limit=10):
         flat_comments = praw.helpers.flatten_tree(submission.comments)
         for comment in flat_comments: 
@@ -193,6 +195,8 @@ while True:
                                 print("Other unknown fault.")
                             else: 
                                 print("Successfully commented on comment ID", comment.id)
-
-                with open('data.txt', 'w') as data_file:
-                    json.dump((handled_comments + {comment.id}), data_file)
+            if comment.id not in handled_comments:
+                raw_json["comment_ids"].append(comment.id)
+                with open("commented.json", "r+") as data_file:
+                    json.dump(raw_json, data_file)
+                    raw_json = json.load(data_file)
