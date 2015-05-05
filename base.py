@@ -197,6 +197,5 @@ while True:
                                 print("Successfully commented on comment ID", comment.id)
             if comment.id not in handled_comments:
                 raw_json["comment_ids"].append(comment.id)
-                with open("commented.json", "r+") as data_file:
+                with open("commented.json", "w") as data_file:
                     json.dump(raw_json, data_file)
-                    raw_json = json.load(data_file)
