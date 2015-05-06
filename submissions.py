@@ -160,87 +160,13 @@ while True:
         # dumps the json file
         raw_json = json.load(data_file)
         # puts the handled_comments and submissions in memory
-        handled_comments = raw_json["comment_ids"]
         handled_submissions = raw_json["submission_ids"]
 
-    # checks all the comments being posted on reddit at all
-    all_comments = praw.helpers.comment_stream(r, "all", verbosity=3)
     # checks all the submissions in reddit
     subreddit = praw.helpers.submission_stream(r, "all", verbosity=1)
 
-    n = 0
-
-    # goes through all the comments
-    for comment in all_comments:
-        n += 1
-        if n > 10000:
-            # let's take a break to check the submissions
-            break
-        # checks if http://gyazo is in the link, and the comments hasn't been handled before
-        if "http://gyazo.com" in comment.body.lower() and comment.id not in handled_comments:
-                # splits the comments into an array (i'd rather not have it broken in other ways)
-                stuff = comment.body.split()
-                # checks the content of the comment
-                for x in stuff: 
-                    # checks if the comment has gyazo, and a minor length check to prevent breaking
-                    if "http://gyazo.com" in x and len(x) > 17:
-                            # gets the i.gyazo link, and then uploads it to imgur, 
-                            # and tries to comment
-                            gyazo_link = gyazo_link_parser(x) 
-                            imgur_upload = imgur_uploader(gyazo_link)
-                            if imgur_upload != False:
-                                try: 
-                                    comment.reply(comment_prep(imgur_upload))
-                                except praw.errors.RateLimitExceeded as e:
-                                    print("Rate limit exceeded:", e)
-                                except praw.errors.APIException as e:
-                                    print("API Exception:", e)
-                                except:
-                                    print("Other unknown fault.")
-                                else: 
-                                    print("Successfully commented on comment ID", comment.id)
-                    # as before
-                    elif "https://gyazo.com" in x and len(x) > 18 and comment.id not in handled_comments:
-                            gyazo_link = gyazo_link_parser(x) 
-                            imgur_upload = imgur_uploader(gyazo_link)
-                            if imgur_upload != False:
-                                try: 
-                                    comment.reply(comment_prep(imgur_upload))
-                                except praw.errors.RateLimitExceeded as e:
-                                    print("Rate limit exceeded:", e)
-                                except praw.errors.APIException as e:
-                                    print("API Exception:", e)
-                                except:
-                                    print("Other unknown fault.")
-                                else: 
-                                    print("Successfully commented on comment ID", comment.id)
-                    # as before
-                    elif "gyazo.net" in x and len(x) > 9 and comment.id not in handled_comments:
-                        x = "http://" + x
-                        if len(x) > 17:
-                            imgur_upload = imgur_uploader(gyazo_link_parser(x))
-                            try: 
-                                comment.reply(comment_prep(imgur_upload))
-                            except praw.errors.RateLimitExceeded as e:
-                                print("Rate limit exceeded:", e)
-                            except praw.errors.APIException as e:
-                                print("API Exception:", e)
-                            except:
-                                print("Other unknown fault.")
-                            else: 
-                                print("Successfully commented on comment ID", comment.id)
-                # and then appends the comment to the handled comments so we don't recheck
-                if comment.id not in handled_comments:
-                    raw_json["comment_ids"].append(comment.id)
-                    with open("commented.json", "w") as data_file:
-                        json.dump(raw_json, data_file)
-
-    n = 0
     # checks all the submission in new
     for submission in subreddit:
-        n += 1
-        if n > 10000: 
-            break
         # gets the domain, url and id
         submission_url = submission.url
         submission_domain = submission.domain
@@ -264,5 +190,5 @@ while True:
 
         if submission_id not in handled_submissions:
             raw_json["submission_ids"].append(submission_id)
-            with open("commented.json", "w") as data_fil:
+            with open("commented.json", "w") as data_file:
                 json.dump(raw_json, data_file)
