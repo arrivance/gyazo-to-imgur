@@ -145,6 +145,18 @@ def comment_prep(content):
     text += "This action was performed by a bot. Message +/u/arrivance for further details."
     return text
 
+def comment_poster(comment, content): 
+    try:
+        comment.reply(content)
+    except praw.errors.RateLimitExceeded as e:
+        print("Rate limit exceeded:", e)
+    except praw.errors.APIException as e:
+        print("API Exception:", e)
+    except:
+        print("Other unknown fault.")
+    else: 
+        print("Successfully commented on comment ID", comment.id)
+
 # logins into the imgurclient using the login details provided
 imgur_client = ImgurClient(login_details["imgur_client_id"], login_details["imgur_secret"])
 
@@ -161,6 +173,7 @@ while True:
         raw_json = json.load(data_file)
         # puts the handled_comments and submissions in memory
         handled_submissions = raw_json["submission_ids"]
+        disallowed_subreddits = raw_json["disallowed"]
 
     # checks all the submissions in reddit
     subreddit = praw.helpers.submission_stream(r, "all", verbosity=1)
@@ -177,16 +190,7 @@ while True:
                 gyazo_link = gyazo_link_parser(submission_url)
                 imgur_upload = imgur_uploader(gyazo_link)
                 if imgur_upload != False:
-                    try: 
-                        submission.reply(comment_prep(imgur_upload))
-                    except praw.errors.RateLimitExceeded as e:
-                        print("Rate limit exceeded:", e)
-                    except praw.errors.APIException as e:
-                        print("API Exception:", e)
-                    except:
-                        print("Other unknown fault.")
-                    else: 
-                        print("Successfully commented on submission ID", submission_id)
+                    comment_poster(submission, comment_prep(imgur_upload))
 
         if submission_id not in handled_submissions:
             raw_json["submission_ids"].append(submission_id)
