@@ -1,0 +1,4 @@
+imgurpython=1.1.6
+praw=2.1.21
+beautifulsoup4=4.3.2
+flask=0.10.1

@@ -12,11 +12,13 @@ import webbrowser
 import sys
 import urllib.request
 import json
+import utility
 
 from imgurpython import ImgurClient
 from tkinter import Tk
 from bs4 import BeautifulSoup
 from flask import Flask, request
+
 
 """
 Configuraation
@@ -24,6 +26,9 @@ Configuraation
 # initialises PRAW instance
 # and creates a user agent
 r = praw.Reddit("Gyazo-to-imgur by /u/arrivance (version b0.7)")
+
+if utility.file_checker("login.json") == False:
+    print("You are required to make a login.json file for the program to work.")
 
 # opens the login.json file with all of the authentication dtails
 with open("login.json") as data_file:
@@ -94,69 +99,6 @@ else:
     webbrowser.open("http://127.0.0.1:65010")
     app.run(debug=False, port=65010)
 
-"""
-Functions
-"""
-
-def gyazo_link_parser(link):
-    """
-    Parses Gyazo links into their raw (.png or .gif) form (i.gyazo)
-    """ 
-    # opens the gyazo link
-    response = urllib.request.urlopen(link)
-    # reads the reponse
-    html = response.read()
-
-    # parses the html using beautifulsoup, and gives me the image link
-    parsed = BeautifulSoup(html)
-    return parsed.img['src']
-
-    # old method of handling gyazo links
-    #title = parsed.title.string
-    #print(str(title))
-
-    #return "http://i.gyazo.com/" + title.replace("Gyazo - ", "")
-
-def imgur_uploader(link): 
-    """
-    Uploads passed image to imgur, and then outputs the link from the JSON/dict provided.
-    I"m calling it JSON. 
-    """
-    # tries to upload the image to imgur
-    try: 
-        uploaded_image = imgur_client.upload_from_url(url=link, config=None, anon=True)
-    except: 
-        # if it crashes, it'll just return False
-        print("Error when uploading the image to imgur.")
-        return False
-    else:
-        # otherwise, yay, we return a link
-        print("Successful convert of", link, "to an imgur link", uploaded_image["link"])
-        return uploaded_image["link"]
-    
-def comment_prep(content): 
-    """
-    Prepares the comment so we can have sme basic context.
-    """
-
-    # same comment structure, so we'll just do it in a function
-    text = "Imgur link: " + content
-    text += "\n\n\n------\n"
-    text += "This action was performed by a bot. Message +/u/arrivance for further details."
-    return text
-
-def comment_poster(comment, content): 
-    try:
-        comment.reply(content)
-    except praw.errors.RateLimitExceeded as e:
-        print("Rate limit exceeded:", e)
-    except praw.errors.APIException as e:
-        print("API Exception:", e)
-    except:
-        print("Other unknown fault.")
-    else: 
-        print("Successfully commented on comment ID", comment.id)
-
 # logins into the imgurclient using the login details provided
 imgur_client = ImgurClient(login_details["imgur_client_id"], login_details["imgur_secret"])
 
@@ -164,6 +106,14 @@ imgur_client = ImgurClient(login_details["imgur_client_id"], login_details["imgu
 access_information =  r.get_access_information(code)
 # authenticates the user with reddit
 authenticated_user = r.get_me()
+
+if utility.file_checker("commented.json") == False:
+    structure = {
+        "comment_ids":"", 
+        "disallowed":"",
+        "submission_ids":""
+    }
+    utility.file_maker("commented.json", structure)
 
 # always loops
 while True: 
@@ -190,17 +140,17 @@ while True:
                     if "http://gyazo.com" in x and len(x) > 17:
                         # gets the i.gyazo link, and then uploads it to imgur, 
                         # and tries to comment
-                        gyazo_link = gyazo_link_parser(x) 
-                        imgur_upload = imgur_uploader(gyazo_link)
+                        gyazo_link = utility.gyazo_link_parser(x)
+                        imgur_upload = utility.imgur_uploader(gyazo_link)
                         if imgur_upload != False:
-                            comment_poster(comment, comment_prep(imgur_upload))
+                            utility.comment_poster(comment, utility.comment_prep(imgur_upload))
                     elif "https://gyazo.com" in x and len(x) > 18:
                             # gets the i.gyazo link, and then uploads it to imgur, 
                             # and tries to comment
-                            gyazo_link = gyazo_link_parser(x) 
-                            imgur_upload = imgur_uploader(gyazo_link)
+                            gyazo_link = utility.gyazo_link_parser(x) 
+                            imgur_upload = utility.imgur_uploader(gyazo_link)
                             if imgur_upload != False:
-                                comment_poster(comment, comment_prep(imgur_upload))
+                                utility.comment_poster(comment, utility.comment_prep(imgur_upload))
                 # and then appends the comment to the handled comments so we don't recheck
                 if comment.id not in handled_comments:
                     raw_json["comment_ids"].append(comment.id)
