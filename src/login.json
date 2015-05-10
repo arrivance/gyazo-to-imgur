@@ -3,5 +3,5 @@
     "imgur_secret":"example_imgur_secret", 
     "reddit_client_id":"example_reddit_client_id", 
     "reddit_client_secret":"example_reddit_client_secret", 
-    "reddit_redirect_uri":"example_reddit_redirect_ri" 
+    "reddit_redirect_uri":"example_reddit_redirect_uri" 
 }
