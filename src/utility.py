@@ -4,9 +4,12 @@ import json
 import requests
 import requests.auth
 import os.path
+import re
 
 from imgurpython import ImgurClient
 from bs4 import BeautifulSoup
+
+imgur_gif_regex = re.compile("https?:\/\/i\.imgur\.com\/[a-z0-9]+.gif")
 
 def gyazo_link_parser(link):
     """
@@ -27,7 +30,7 @@ def gyazo_link_parser(link):
 
     #return "http://i.gyazo.com/" + title.replace("Gyazo - ", "")
 
-def imgur_uploader(link): 
+def imgur_uploader(link, imgur_client): 
     """
     Uploads passed image to imgur, and then outputs the link from the JSON/dict provided.
     I"m calling it JSON. 
@@ -42,6 +45,8 @@ def imgur_uploader(link):
     else:
         # otherwise, yay, we return a link
         print("Successful convert of", link, "to an imgur link", uploaded_image["link"])
+        if len(imgur_gif_regex.findall(uploaded_image["link"])) != 0: 
+            return uploaded_image["link"] + "v"
         return uploaded_image["link"]
     
 def comment_prep(content): 

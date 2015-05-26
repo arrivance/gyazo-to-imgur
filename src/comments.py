@@ -9,6 +9,7 @@ Author: arrivance
 import praw
 import json
 import utility
+import re
 
 from imgurpython import ImgurClient
 
@@ -22,6 +23,8 @@ if utility.file_checker("login.json") == False:
 with open("login.json") as data_file:
     # dumps all the login details into the program 
     login_details = json.load(data_file)
+
+gyazo_regex = re.compile("https?:\/\/gyazo\.com\/[a-z0-9]+")
 
 # initialises PRAW instance
 # and creates a user agent
@@ -72,29 +75,15 @@ while True:
 
     # goes through all the comments
     for comment in all_comments:
-        # checks if http://gyazo is in the link, and the comments hasn't been handled before
-        if "gyazo" in comment.body.lower() and comment.id not in handled_comments and comment.subreddit.display_name not in disallowed_subreddits:
-                # splits the comments into an array (i'd rather not have it broken in other ways)
-                stuff = comment.body.split()
-                # checks the content of the comment
-                for x in stuff: 
-                    # checks if the comment has gyazo, and a minor length check to prevent breaking
-                    if "http://gyazo.com" in x and len(x) > 17:
-                        # gets the i.gyazo link, and then uploads it to imgur, 
-                        # and tries to comment
-                        gyazo_link = utility.gyazo_link_parser(x)
-                        imgur_upload = utility.imgur_uploader(gyazo_link)
-                        if imgur_upload != False:
-                            utility.comment_poster(comment, utility.comment_prep(imgur_upload))
-                    elif "https://gyazo.com" in x and len(x) > 18:
-                            # gets the i.gyazo link, and then uploads it to imgur, 
-                            # and tries to comment
-                            gyazo_link = utility.gyazo_link_parser(x) 
-                            imgur_upload = utility.imgur_uploader(gyazo_link)
-                            if imgur_upload != False:
-                                utility.comment_poster(comment, utility.comment_prep(imgur_upload))
-                # and then appends the comment to the handled comments so we don't recheck
-                if comment.id not in handled_comments:
-                    raw_json["comment_ids"].append(comment.id)
-                    with open("commented.json", "w") as data_file:
-                        json.dump(raw_json, data_file)
+        matches = gyazo_regex.findall(comment.body.lower())
+        if len(matches) != 0 and comment.id not in handled_comments: 
+            for link in matches:
+                gyazo_link = utility.gyazo_link_parser(link)
+                imgur_upload = utility.imgur_uploaer(gyazo_link, imgur_client)
+                if imgur_upload != False:
+                    utility.comment_poster(comment, utility.comment_prep(imgur_upload))
+        # and then appends the comment to the handled comments so we don't recheck
+            if comment.id not in handled_comments:
+                raw_json["comment_ids"].append(comment.id)
+                with open("commented.json", "w") as data_file:
+                    json.dump(raw_json, data_file)
