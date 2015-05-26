@@ -1,14 +1,12 @@
 import praw
-import webbrowser
-import sys
 import urllib.request
 import json
+import requests
+import requests.auth
 import os.path
 
 from imgurpython import ImgurClient
-from tkinter import Tk
 from bs4 import BeautifulSoup
-from flask import Flask, request
 
 def gyazo_link_parser(link):
     """
@@ -79,3 +77,13 @@ def file_maker(filename, structure):
 	with open(filename, "w") as data_file:
 		json.dump(structure, filename)
 	return True
+
+def reddit_oauth_token(login_details, user_agent):
+    client_auth = requests.auth.HTTPBasicAuth(login_details["reddit_client_id"], login_details["reddit_client_secret"])
+    post_data = {"grant_type": "password", "username": login_details["reddit_user"], "password": login_details["reddit_pass"]}
+    headers = {"User-Agent": user_agent}
+    print("Attempting to get the access_token from reddit...")
+    response = requests.post("https://www.reddit.com/api/v1/access_token", auth=client_auth, data=post_data, headers=headers)
+    access_token = response.json()["access_token"]
+    print("access_token succesfully gotten:", access_token)
+    return access_token

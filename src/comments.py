@@ -2,31 +2,19 @@
 Name: Gyazo-to-imgur bot
 
 Purpose: To convert Gyazo links to imgur links, as imgur is objectively better for RES users.
-Also contains a mini-webserver to make authentication easier.
 
 Author: arrivance
 """
 
 import praw
-import webbrowser
-import sys
-import urllib.request
 import json
 import utility
 
 from imgurpython import ImgurClient
-from tkinter import Tk
-from bs4 import BeautifulSoup
-from flask import Flask, request
-
 
 """
-Configuraation
+Configuration
 """
-# initialises PRAW instance
-# and creates a user agent
-r = praw.Reddit("Gyazo-to-imgur by /u/arrivance (version b0.7)")
-
 if utility.file_checker("login.json") == False:
     print("You are required to make a login.json file for the program to work.")
 
@@ -35,84 +23,38 @@ with open("login.json") as data_file:
     # dumps all the login details into the program 
     login_details = json.load(data_file)
 
-"""
-The OAuth setup 
-Creates a Flask webserver, and then gives easy instructions to OAuth. 
-Required as reddit is moving away from cookie based logins
-"""
-# creates an oauth app with the provided login details
+# initialises PRAW instance
+# and creates a user agent
+user_agent = login_details["reddit_ua"]
+print("Gyazo to imgur converter by /u/arrivance")
+print("User agent:", user_agent)
+
+r = praw.Reddit(user_agent)
 r.set_oauth_app_info(client_id=login_details["reddit_client_id"], client_secret=login_details["reddit_client_secret"], redirect_uri=login_details["reddit_redirect_uri"])
 
-# creates an instance of flask
-app = Flask(__name__)
-@app.route("/")
-def homepage(): 
-    """
-    Initial OAuth link
-    """
-    return "<a href=%s>Auth with the reddit API</a>" % r.get_authorize_url("uniqueKey", ["identity", "submit"], True)
-
-@app.route("/authorize_callback")
-def authorized():
-    """
-    After we"ve successfully logged into the reddit API, we then parse what it returns to us
-    """
-    global code
-    state = request.args.get("state", "")
-    code = request.args.get("code", "")
-
-    # instructs the user to click a link to shutdown the flask instance
-    return "Authentication with the reddit API was successful. Please click to close authentication: <a href='http://127.0.0.1:65010/shutdown'>shutdown</a>."
-
-@app.route("/shutdown")
-def shutdown():
-    """
-    Shutdowns the Flask instance to proceed
-    """
-    func = request.environ.get("werkzeug.server.shutdown")
-    if func is None: 
-        print("Err")
-
-    func()
-
-# if you don't want to auth via the web server, you can auth via the web client
-if "-manauth" in sys.argv:
-    global code
-
-    auth_url = r.get_authorize_url("uniqueKey", ["identity", "submit"], True)
-
-    # adds the url to the clipboard
-    clip = Tk()
-    clip.withdraw()
-    clip.clipboard_clear()
-    clip.clipboard_append(auth_url)
-    clip.destroy()
-
-    print("Authentication URL has been successfully copied to the clipboard. Please copy and paste this into a web browser.")
-    print("URL if clipboard copying has not been succesful: ", auth_url)
-
-    # makes the user paste it in
-    print("\n\nAfter clicking 'Accept' on the page, please copy and paste from where it says 'code=' in the address bar. Paste it when the program asks.")
-    code = input("Paste the code as asked before: ")
-else:
-    # creates the web server
-    webbrowser.open("http://127.0.0.1:65010")
-    app.run(debug=False, port=65010)
-
-# logins into the imgurclient using the login details provided
-imgur_client = ImgurClient(login_details["imgur_client_id"], login_details["imgur_secret"])
+"""
+reddit auth
+"""
+access_token = utility.reddit_oauth_token(login_details, user_agent)
 
 # gets the access information
-access_information =  r.get_access_information(code)
+r.set_access_credentials({"identity", "submit"}, access_token)
 # authenticates the user with reddit
 authenticated_user = r.get_me()
 
+"""
+imgur auth
+"""
+# logins into the imgurclient using the login details provided
+imgur_client = ImgurClient(login_details["imgur_client_id"], login_details["imgur_secret"])
+
 if utility.file_checker("commented.json") == False:
     structure = {
-        "comment_ids":"", 
-        "disallowed":"",
-        "submission_ids":""
+        "comment_ids":"[]", 
+        "disallowed":"[]",
+        "submission_ids":"[]"
     }
+    print("It is recommended to follow Bottiquete, and to add a list of blacklisted subreddits to disallowed.")
     utility.file_maker("commented.json", structure)
 
 # always loops

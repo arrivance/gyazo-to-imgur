@@ -1,7 +1,10 @@
  {
-    "imgur_client_id":"example_imgur_client_id", 
-    "imgur_secret":"example_imgur_secret", 
-    "reddit_client_id":"example_reddit_client_id", 
-    "reddit_client_secret":"example_reddit_client_secret", 
-    "reddit_redirect_uri":"example_reddit_redirect_uri" 
+    "imgur_client_id":"replace_imgur_client_id", 
+    "imgur_secret":"replace_imgur_secret", 
+    "reddit_client_id":"replace_reddit_client_id", 
+    "reddit_client_secret":"replace_reddit_client_secret", 
+    "reddit_redirect_uri":"http://127.0.0.1:65010/authorize_callback",
+    "reddit_user":"replace_reddit_username", 
+    "reddit_pass":"replace_reddit_password",
+    "reddit_ua":"Gyazo to imgur converter by /u/arrivance: run by /u/replacename [b0]"
 }
