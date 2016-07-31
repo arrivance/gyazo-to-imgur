@@ -79,7 +79,7 @@ while True:
         if len(matches) != 0 and comment.id not in handled_comments: 
             for link in matches:
                 gyazo_link = utility.gyazo_link_parser(link)
-                imgur_upload = utility.imgur_uploaer(gyazo_link, imgur_client)
+                imgur_upload = utility.imgur_uploader(gyazo_link, imgur_client)
                 if imgur_upload != False:
                     utility.comment_poster(comment, utility.comment_prep(imgur_upload))
         # and then appends the comment to the handled comments so we don't recheck
