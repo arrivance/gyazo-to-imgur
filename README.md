@@ -1,3 +1,6 @@
+# Deprecated
+Has not been updated in years, certain dependencies very likely have security vulns.
+
 # gyazo-to-imgur
 A PRAW-based reddit bot that'll convert Gyazo links to imgur links. 
 
